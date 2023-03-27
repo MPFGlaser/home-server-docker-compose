@@ -1,0 +1,44 @@
+version: '3.4'
+
+services:
+  klipper:
+    image: dimalo/klipper-moonraker
+    container_name: klipper
+    ports:
+      - 7125:7125
+    restart: unless-stopped
+    volumes:
+      - gcode_files:/home/klippy/gcode_files
+      - ./config:/home/klippy/.config
+      - moonraker_data:/home/klippy/.moonraker
+    devices:
+      - /dev/serial/by-id/usb-Klipper_stm32f103xe_31FFD2054242363125521657-if00:/dev/serial/by-id/usb-Klipper_stm32f103xe_31FFD2054242363125521657-if00
+
+  fluidd:
+    image: cadriel/fluidd
+    container_name: fluidd
+    ports:
+      - 8010:80
+    restart: unless-stopped
+
+    depends_on:
+      - klipper
+    links:
+      - klipper:klipper
+
+
+
+  mjpg-streamer:
+    image: kvaps/mjpg-streamer
+    container_name: mjpg-streamer
+    privileged: true
+    ports:
+      - 7225:8090
+    restart: unless-stopped
+    devices:
+      - /dev/video0
+    command: -i "/usr/lib64/input_uvc.so -y -d /dev/video0 -r 1280x960 -f 30 --yuv" -o "/usr/lib64/output_http.so -p 8090 -w /usr/share/mjpeg-streamer/www/"
+
+volumes:
+  gcode_files:
+  moonraker_data:
