@@ -60,10 +60,20 @@ services:
       - 7226:8080
 
   fluidd:
-    image: cadriel/fluidd:latest
+    image: ghcr.io/fluidd-core/fluidd:latest
     restart: unless-stopped
     ports:
       - 8010:80
+
+  spoolman:
+    image: ghcr.io/donkie/spoolman:latest
+    restart: unless-stopped
+    volumes:
+      - ${CONFIG}/spoolman:/home/ubuntu/.local/share/spoolman
+    ports:
+      - "7912:8000"
+    environment:
+      - TZ=Europe/Amsterdam # Optional, defaults to UTC
 
   init:
     image: busybox:latest
