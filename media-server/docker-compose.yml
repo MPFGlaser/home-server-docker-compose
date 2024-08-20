@@ -96,6 +96,21 @@ services:
       - ${ROOT}/config/plex/db:/config # plex database
       - ${ROOT}/config/plex/transcode:/transcode # temp transcoded files
       - ${MEDIA_ROOT}:/data # media library
+  
+  jellyfin:
+    container_name: jellyfin
+    image: jellyfin/jellyfin:latest
+    restart: unless-stopped
+    user: ${PUID}:${PGID} # default user and group id, defined in .env
+    ports: 
+      - 8096
+    environment:
+      - TZ=${TZ} # timezone, defined in .env
+    network_mode: host
+    volumes:
+      - ${ROOT}/config/jellyfin:/config # config files
+      - ${ROOT}/cache/jellyfin:/cache # cache files
+      - ${MEDIA_ROOT}:/media # media library
 
   bazarr:
     container_name: bazarr
