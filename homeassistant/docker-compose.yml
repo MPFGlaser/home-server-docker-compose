@@ -6,6 +6,67 @@ services:
     volumes:
       - /containers/homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
+    devices:
+      - /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0:/dev/ttyUSB0
     restart: unless-stopped
     privileged: true
     network_mode: host
+  music-assistant-server:
+    image: ghcr.io/music-assistant/server:latest # <<< Desired release version here (or use beta to get the latest beta version)
+    container_name: music-assistant-server
+    restart: unless-stopped
+    # Network mode must be set to host for MA to work correctly
+    network_mode: host
+    volumes:
+      - /containers/music-assistant-server/data:/data/
+    # privileged caps (and security-opt) needed to mount smb folders within the container
+    cap_add:
+      - SYS_ADMIN
+      - DAC_READ_SEARCH
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      # Provide logging level as environment variable.
+      # default=info, possible=(critical, error, warning, info, debug)
+      - LOG_LEVEL=info
+  speech_to_phrase:
+    image: rhasspy/wyoming-speech-to-phrase
+    ports:
+      - 10300:10300
+    volumes:
+      - /containers/speech_to_phrase/models:/models
+      - /containers/speech_to_phrase/train:/train
+    command: >
+      --hass-websocket-uri 'ws://192.168.0.69:8123/api/websocket'
+      --hass-token 'redacted'
+      --retrain-on-start
+    restart: unless-stopped
+  wyoming-glados:
+    image: docker.io/nalf3in/wyoming-glados:latest
+    container_name: wyoming-glados
+    ports:
+      - 10201:10201
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  wyoming-whisper:
+    image: rhasspy/wyoming-whisper
+    ports:
+      - "10301:10300"
+    volumes:
+      - ./containers/whisper-data:/data
+    #command: [ "--model", "medium-int8", "--language", "en" ]
+    command: [ "--model", "small", "--language", "nl" ]
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
